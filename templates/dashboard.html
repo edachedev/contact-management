@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <style>
+        body {
+            background-color: #f0f8ff; /* Soft blue color */
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 600px;
+            margin: 0 auto;
+            padding-top: 50px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .header a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Dashboard</h2>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+        <p>Welcome, {{ current_user.username }}!</p>
+    </div>
+</body>
+</html>
