@@ -1,58 +1,49 @@
-from flask import Flask, render_template, redirect, url_for, request, flash
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, User
+from flask import Flask, request, redirect, url_for, render_template
+from models import db, Contact
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///contacts.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+@app.before_first_request
+def create_tables():
+    db.create_all()
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
+@app.route('/')
+def home():
+    contacts = Contact.query.all()
+    return render_template('home.html', contacts=contacts)
+
+@app.route('/add', methods=['GET', 'POST'])
+def add_contact():
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
-        user = User(username=username, email=email)
-        user.set_password(password)
-        db.session.add(user)
+        name = request.form.get('name')
+        phone = request.form.get('phone')
+        email = request.form.get('email')
+        new_contact = Contact(name=name, phone=phone, email=email)
+        db.session.add(new_contact)
         db.session.commit()
-        flash('Account created successfully!', 'success')
-        return redirect(url_for('login'))
-    return render_template('register.html')
+        return redirect(url_for('home'))
+    return render_template('add_contact.html')
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/update/<int:id>', methods=['GET', 'POST'])
+def update_contact(id):
+    contact = Contact.query.get_or_404(id)
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Login unsuccessful. Please check email and password', 'danger')
-    return render_template('login.html')
+        contact.name = request.form.get('name')
+        contact.phone = request.form.get('phone')
+        contact.email = request.form.get('email')
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('update_contact.html', contact=contact)
 
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
-
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    return render_template('dashboard.html')
-
-# Add other necessary routes (e.g., CRUD operations for contacts) here
+@app.route('/delete/<int:id>')
+def delete_contact(id):
+    contact = Contact.query.get_or_404(id)
+    db.session.delete(contact)
+    db.session.commit()
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
